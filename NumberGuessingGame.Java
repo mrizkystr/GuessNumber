@@ -1,7 +1,10 @@
+import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.IOException;
 import java.util.Random;
 
 public class NumberGuessingGameGUI extends JFrame {
@@ -10,47 +13,47 @@ public class NumberGuessingGameGUI extends JFrame {
     private int numberOfTries;
     private int maxTries;
     private int highScore = Integer.MAX_VALUE;
-    
+
     private JTextField guessField;
     private JLabel resultLabel;
     private JButton guessButton;
     private JComboBox<String> difficultyComboBox;
     private JButton resetButton;
     private JLabel highScoreLabel;
-    
+
     public NumberGuessingGameGUI() {
         setTitle("Number Guessing Game");
         setSize(500, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         setResizable(false);
-        
+
         // Menu untuk mengubah tema
         JMenuBar menuBar = new JMenuBar();
         JMenu themeMenu = new JMenu("Themes");
         JMenuItem defaultTheme = new JMenuItem("Default");
         JMenuItem darkTheme = new JMenuItem("Dark");
         JMenuItem lightTheme = new JMenuItem("Light");
-        
+
         defaultTheme.addActionListener(e -> setTheme("default"));
         darkTheme.addActionListener(e -> setTheme("dark"));
         lightTheme.addActionListener(e -> setTheme("light"));
-        
+
         themeMenu.add(defaultTheme);
         themeMenu.add(darkTheme);
         themeMenu.add(lightTheme);
         menuBar.add(themeMenu);
         setJMenuBar(menuBar);
-        
+
         // Panel atas untuk memilih tingkat kesulitan dan memulai permainan
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BorderLayout());
         topPanel.setBackground(Color.CYAN);
-        
+
         JLabel titleLabel = new JLabel("Number Guessing Game", JLabel.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         topPanel.add(titleLabel, BorderLayout.NORTH);
-        
+
         JPanel difficultyPanel = new JPanel();
         difficultyPanel.setLayout(new FlowLayout());
         difficultyPanel.add(new JLabel("Select Difficulty:"));
@@ -60,15 +63,15 @@ public class NumberGuessingGameGUI extends JFrame {
         startButton.addActionListener(new StartButtonListener());
         difficultyPanel.add(startButton);
         topPanel.add(difficultyPanel, BorderLayout.CENTER);
-        
+
         highScoreLabel = new JLabel("High Score: -", JLabel.CENTER);
         topPanel.add(highScoreLabel, BorderLayout.SOUTH);
-        
+
         // Panel tengah untuk memasukkan tebakan dan menampilkan hasil
         JPanel centerPanel = new JPanel();
         centerPanel.setLayout(new GridLayout(3, 1));
         centerPanel.setBackground(Color.LIGHT_GRAY);
-        
+
         JPanel guessPanel = new JPanel();
         guessPanel.add(new JLabel("Enter your guess:"));
         guessField = new JTextField(10);
@@ -77,27 +80,27 @@ public class NumberGuessingGameGUI extends JFrame {
         guessButton.addActionListener(new GuessButtonListener());
         guessPanel.add(guessButton);
         centerPanel.add(guessPanel);
-        
+
         resultLabel = new JLabel(" ", JLabel.CENTER);
         resultLabel.setFont(new Font("Arial", Font.PLAIN, 18));
         centerPanel.add(resultLabel);
-        
+
         // Panel bawah untuk tombol reset
         JPanel bottomPanel = new JPanel();
         bottomPanel.setBackground(Color.CYAN);
-        
+
         resetButton = new JButton("Reset Game");
         resetButton.addActionListener(new ResetButtonListener());
         resetButton.setEnabled(false);
         bottomPanel.add(resetButton);
-        
+
         add(topPanel, BorderLayout.NORTH);
         add(centerPanel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
-        
+
         guessButton.setEnabled(false);
     }
-    
+
     private void setTheme(String theme) {
         Color backgroundColor, panelColor, textColor;
         switch (theme) {
@@ -128,7 +131,7 @@ public class NumberGuessingGameGUI extends JFrame {
         }
         repaint();
     }
-    
+
     private void startGame() {
         numberOfTries = 0;
         int difficulty = difficultyComboBox.getSelectedIndex();
@@ -151,8 +154,9 @@ public class NumberGuessingGameGUI extends JFrame {
         guessButton.setEnabled(true);
         resetButton.setEnabled(true);
         guessField.setEnabled(true);
+        playSound("start.wav");
     }
-    
+
     private void checkGuess() {
         try {
             int guess = Integer.parseInt(guessField.getText());
@@ -161,12 +165,15 @@ public class NumberGuessingGameGUI extends JFrame {
                 resultLabel.setText("Please enter a number between 1 and " + maxNumber + ".");
             } else if (guess < numberToGuess) {
                 resultLabel.setText("It's higher than " + guess + ". Try again.");
+                playSound("incorrect.wav");
             } else if (guess > numberToGuess) {
                 resultLabel.setText("It's lower than " + guess + ". Try again.");
+                playSound("incorrect.wav");
             } else {
                 resultLabel.setText("Congratulations! You've guessed the number " + numberToGuess + " in " + numberOfTries + " tries.");
                 guessButton.setEnabled(false);
                 guessField.setEnabled(false);
+                playSound("correct.wav");
                 if (numberOfTries < highScore) {
                     highScore = numberOfTries;
                     highScoreLabel.setText("High Score: " + highScore);
@@ -181,33 +188,46 @@ public class NumberGuessingGameGUI extends JFrame {
             resultLabel.setText("Please enter a valid number.");
         }
     }
-    
+
     private void resetGame() {
         guessField.setText("");
         resultLabel.setText("");
         guessButton.setEnabled(false);
         resetButton.setEnabled(false);
         guessField.setEnabled(false);
+        playSound("reset.wav");
     }
-    
+
+    private void playSound(String soundFileName) {
+        try {
+            File soundFile = new File("sounds/" + soundFileName);
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundFile);
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioStream);
+            clip.start();
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
     private class StartButtonListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             startGame();
         }
     }
-    
+
     private class GuessButtonListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             checkGuess();
         }
     }
-    
+
     private class ResetButtonListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             resetGame();
         }
     }
-    
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
